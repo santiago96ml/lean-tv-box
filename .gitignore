@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.apk
+*.dex
+.DS_Store
+Thumbs.db
+.env

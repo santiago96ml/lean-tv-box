@@ -1,0 +1,152 @@
+{
+  "schema_version": "1.0.0",
+  "target_hardware": {
+    "Reference_Board": "Skyworth Digital HP40A / FlowBox-F1",
+    "SoC": "Amlogic S905X2 (Quad-Core ARM Cortex-A53 @ 1.8 GHz)",
+    "RAM": "2 GB DDR3/DDR4 (1856 MB usable kernel space)",
+    "Android_Version": "Android TV 10 / 11 (API 29-30)"
+  },
+  "malware_and_botnets": {
+    "description": "Critical security threats, residential proxy botnets, and trojanized IPTV clients disguised as free streaming apps (e.g., MagisTV / SkyLive clones). These establish unauthorized persistent VPN/proxy tunnels, hijack up to 30% continuous CPU across all 4 Cortex-A53 cores, and expose the home LAN.",
+    "default_action": ["pm clear", "pm uninstall --user 0", "pm disable-user --user 0"],
+    "packages": [
+      "com.haxsmart.skylive"
+    ],
+    "package_details": {
+      "com.haxsmart.skylive": {
+        "common_name": "SkyLive / MagisTV Trojanized Engine",
+        "severity": "CRITICAL",
+        "cpu_impact": "~30% continuous CPU hijack across Cortex-A53 cores",
+        "ram_impact_mb": 145,
+        "behavior": "Establishes a hidden persistent VPN/proxy tunnel (BIND_VPN_SERVICE) and background C2 daemon on boot (RECEIVE_BOOT_COMPLETED), turning the TV Box into an exit node for residential proxy botnets while throttling legitimate media decoding.",
+        "mitigation": "Immediate full removal via 'pm clear com.haxsmart.skylive' followed by 'pm uninstall --user 0 com.haxsmart.skylive'."
+      }
+    }
+  },
+  "operator_telemetry_and_locks": {
+    "description": "ISP/Operator provisioning locks, custom high-RAM launchers, TR-069/TR-369 remote management (CWMP/USP) agents, XMPP remote command listeners, forced OTA updaters, and continuous logcat telemetry daemons.",
+    "firmware_note": "IMPORTANT: Skyworth firmware protects 'ar.com.flow.*' packages at the PackageManagerService level with a hardcoded 'pm uninstall' whitelist (returning DELETE_FAILED_INTERNAL_ERROR). To neutralize them without root, you MUST execute 'pm clear <pkg>' followed by 'pm suspend --user 0 <pkg>' and 'cmd appops set <pkg> RUN_IN_BACKGROUND ignore'.",
+    "default_action": ["pm clear", "pm suspend --user 0", "pm disable-user --user 0", "pm uninstall --user 0"],
+    "packages": [
+      "ar.com.flow.provisioncheck",
+      "ar.com.flow.androidtv_stb",
+      "ar.com.flow.radiosymusica",
+      "com.skyworth.android.tr069",
+      "com.sdt.android.tr369",
+      "com.skyworth.xmppservice",
+      "com.skyworth.update",
+      "com.sdt.ota",
+      "com.skyworthdigital.diagnose",
+      "com.skyworth.skylogcatservice"
+    ],
+    "package_details": {
+      "ar.com.flow.provisioncheck": {
+        "common_name": "Flow Provisioning Lock Daemon",
+        "firmware_protected": true,
+        "ram_impact_mb": 65,
+        "behavior": "Queries operator ACS servers to verify active subscription status and draws a persistent full-screen lock overlay (SYSTEM_ALERT_WINDOW) if the STB is used standalone.",
+        "mitigation": "Protected by Skyworth pm uninstall whitelist. Neutralize via 'pm clear ar.com.flow.provisioncheck' + 'pm suspend --user 0 ar.com.flow.provisioncheck' + 'appops set ar.com.flow.provisioncheck SYSTEM_ALERT_WINDOW deny'."
+      },
+      "ar.com.flow.androidtv_stb": {
+        "common_name": "Flow Custom Operator Launcher & middleware",
+        "firmware_protected": true,
+        "ram_impact_mb": 220,
+        "behavior": "Monolithic operator UI, EPG middleware, and background DRM/heartbeat service consuming over 200 MB of Resident Set Size (RSS) RAM continuously.",
+        "mitigation": "Protected by Skyworth pm uninstall whitelist. Replace with a lightweight launcher or Google TV Home, then execute 'pm clear ar.com.flow.androidtv_stb' + 'pm suspend --user 0 ar.com.flow.androidtv_stb'."
+      },
+      "ar.com.flow.radiosymusica": {
+        "common_name": "Flow Radios y Musica Content Applet",
+        "firmware_protected": true,
+        "ram_impact_mb": 45,
+        "behavior": "Operator audio streaming applet that preloads background metadata receivers on boot.",
+        "mitigation": "Protected by Skyworth pm uninstall whitelist. Neutralize via 'pm clear ar.com.flow.radiosymusica' + 'pm suspend --user 0 ar.com.flow.radiosymusica'."
+      },
+      "com.skyworth.android.tr069": {
+        "common_name": "Skyworth TR-069 CWMP Remote Management Agent",
+        "firmware_protected": false,
+        "ram_impact_mb": 38,
+        "behavior": "Implements CPE WAN Management Protocol (CWMP), allowing remote ISP servers to inspect device state, push silent configurations, and re-enable operator locks.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      },
+      "com.sdt.android.tr369": {
+        "common_name": "Skyworth Digital TR-369 (USP) Telemetry Agent",
+        "firmware_protected": false,
+        "ram_impact_mb": 42,
+        "behavior": "Next-generation User Services Platform (USP / TR-369) persistent telemetry and remote control daemon.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      },
+      "com.skyworth.xmppservice": {
+        "common_name": "Skyworth XMPP Push Command Listener",
+        "firmware_protected": false,
+        "ram_impact_mb": 30,
+        "behavior": "Maintains an open XMPP socket to vendor cloud servers to trigger real-time TR-069/TR-369 wakeups and remote diagnostics.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      },
+      "com.skyworth.update": {
+        "common_name": "Skyworth System Updater",
+        "firmware_protected": false,
+        "ram_impact_mb": 28,
+        "behavior": "Polls for vendor firmware updates that can overwrite debloat states and re-lock the bootloader/launcher.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      },
+      "com.sdt.ota": {
+        "common_name": "SDT Over-The-Air (OTA) Daemon",
+        "firmware_protected": false,
+        "ram_impact_mb": 25,
+        "behavior": "Background OTA package downloader and verifier service.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      },
+      "com.skyworthdigital.diagnose": {
+        "common_name": "Skyworth Digital Remote Diagnostics",
+        "firmware_protected": false,
+        "ram_impact_mb": 35,
+        "behavior": "Collects hardware metrics, network topology, and package inventories for remote operator inspection.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      },
+      "com.skyworth.skylogcatservice": {
+        "common_name": "Skyworth Continuous Logcat Capture Service",
+        "firmware_protected": false,
+        "ram_impact_mb": 32,
+        "behavior": "Continuously dumps system logcat buffers to flash storage, causing unnecessary eMMC I/O wear and CPU wakeups.",
+        "mitigation": "Disable/uninstall for user 0 ('pm clear', 'pm disable-user --user 0', 'pm uninstall --user 0')."
+      }
+    }
+  },
+  "heavy_preloads_optional": {
+    "description": "Heavy commercial streaming preloads that run persistent background Cobalt/WebView engines or DRM daemons even when idle. Suspending these is optional and recommended when substituting with lightweight open-source alternatives.",
+    "replacement_recommendations": {
+      "com.google.android.youtube.tv": "Replace with SmartTube (com.liskovsoft.smarttubetv.beta / .stable) — open-source, zero background telemetry, built-in SponsorBlock/AdBlock, and ~60% lower RAM footprint than the official Cobalt engine.",
+      "com.google.android.videos": "Google Play Movies & TV / Google TV VOD daemon — safely suspended if using local media players (Nova Video Player, VLC) or Stremio/CloudStream.",
+      "com.netflix.ninja": "Official Netflix Android TV daemon — keeps background ESN/Widevine pre-warmed services in RAM; suspend if not actively subscribed."
+    },
+    "default_action": ["pm clear", "pm suspend --user 0"],
+    "packages": [
+      "com.google.android.youtube.tv",
+      "com.google.android.videos",
+      "com.netflix.ninja"
+    ],
+    "package_details": {
+      "com.google.android.youtube.tv": {
+        "common_name": "Official YouTube for Android TV (Cobalt Engine)",
+        "ram_impact_mb": 180,
+        "open_source_replacement": "SmartTube (https://github.com/yuliskov/SmartTube)",
+        "behavior": "Runs a heavy Cobalt browser runtime that stays cached in RAM and preloads ad-serving buffers.",
+        "mitigation": "Optional: 'pm clear com.google.android.youtube.tv' + 'pm suspend --user 0 com.google.android.youtube.tv' after installing SmartTube."
+      },
+      "com.google.android.videos": {
+        "common_name": "Google TV / Play Movies & TV",
+        "ram_impact_mb": 75,
+        "open_source_replacement": "Nova Video Player / VLC / CloudStream",
+        "behavior": "Background content recommendation sync and storefront service.",
+        "mitigation": "Optional: 'pm clear com.google.android.videos' + 'pm suspend --user 0 com.google.android.videos'."
+      },
+      "com.netflix.ninja": {
+        "common_name": "Netflix Android TV Client",
+        "ram_impact_mb": 110,
+        "open_source_replacement": "CloudStream / Stremio / Kodi (if Netflix subscription is unused)",
+        "behavior": "Pre-allocates DRM buffers and partner partner-key listeners on Android TV boot.",
+        "mitigation": "Optional: 'pm clear com.netflix.ninja' + 'pm suspend --user 0 com.netflix.ninja'."
+      }
+    }
+  }
+}
